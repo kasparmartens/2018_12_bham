@@ -1,0 +1,67 @@
+---
+title: "Exploratory data analysis on TCGA Breast Cancer gene expression data"
+output: html_notebook
+---
+
+
+Read in the data sets
+
+```{r}
+df_exprs <- readRDS("data/TCGA_exprs.rds")
+head(df_exprs)
+
+df_clinical <- readRDS("data/TCGA_clinical.rds")
+head(df_clinical)
+
+df_pca <- readRDS("data/TCGA_pca.rds")
+head(df_pca)
+```
+
+# Getting to know the data
+
+### Part 1: Focusing on a particular gene
+
+Do ER+ and ER- patients exhibit differences in the expression of a particular gene of interest (ESR1)?
+
+```{r}
+# your code
+```
+
+Do PAM50 cancer subtypes exhibit differences in the expression of a particular gene of interest (ESR1)?
+
+```{r}
+# your code
+```
+
+### Part 2: High-dimensional data (considering all genes)
+
+First, convert the expression data into tidy format
+
+```{r}
+# your code
+```
+
+Join the three different data sets, using the sample IDs for merging. This will be useful for further analysis. 
+
+```{r}
+# your code
+```
+
+As a first step, to get an idea of distributions, let's make histograms of expression for some of the genes (e.g. 10 randomly selected genes). 
+
+```{r}
+# your code
+```
+
+Considering all genes, do ER+ and ER- patients have generally quite different expression profiles, or are they quite similar?
+
+```{r}
+# your code
+```
+
+Considering all genes, do PAM50 subtypes have generally quite different expression profiles, or are they quite similar? 
+
+```{r}
+# your code
+```
+

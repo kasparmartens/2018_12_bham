@@ -1,0 +1,387 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <title>Exploratory Data Analysis and visualisation (cont-d)</title>
+    <meta charset="utf-8">
+    <meta name="author" content="Kaspar Märtens" />
+    <link href="libs/remark-css/default.css" rel="stylesheet" />
+    <link href="libs/remark-css/default-fonts.css" rel="stylesheet" />
+  </head>
+  <body>
+    <textarea id="source">
+class: center, middle, inverse, title-slide
+
+# Exploratory Data Analysis and visualisation (cont-d)
+### Kaspar Märtens
+### 4 December 2018
+
+---
+
+
+
+
+class: inverse
+
+### Last time:
+
+--
+
+Data visualisation and ggplot2 (with examples based on gapminder data)
+
+![](fig/gapminder_lifeExp.png)
+
+--
+
+### Today:
+
+Exploratory data analysis (using tidyverse) in practice: 
+
+Let's try out some real data analysis on TCGA breast cancer data
+
+--
+
+.footnote[If there is time, we might take a look at the gganimate package]
+
+---
+class: inverse
+
+# TCGA breast cancer data set
+
+* Phenotypes:
+    * age at diagnosis
+    * ER status (estrogen-receptor-positive or negative)
+    * PAM50 cancer subtype
+    * etc
+* Gene expression data:
+    * `log(x+1)` transformed expression for all genes
+
+
+Find data and notebook in https://github.com/kasparmartens/2018_12_bham
+
+---
+
+
+```r
+df_clinical &lt;- readRDS("data/TCGA_clinical.rds")
+head(df_clinical)
+```
+
+```
+##             id stage PAM50 age_at_diagnosis ER_status PR_status pathology
+## 1 TCGA-3C-AAAU                           55  Positive  Positive      &lt;NA&gt;
+## 2 TCGA-3C-AALI                           50  Positive  Positive      &lt;NA&gt;
+## 3 TCGA-3C-AALJ                           62  Positive  Positive      &lt;NA&gt;
+## 4 TCGA-3C-AALK                           52  Positive  Positive      &lt;NA&gt;
+## 5 TCGA-4H-AAAK                           50  Positive  Positive      &lt;NA&gt;
+## 6 TCGA-5L-AAT0                           42  Positive  Positive      &lt;NA&gt;
+```
+
+```r
+df_exprs &lt;- readRDS("data/TCGA_exprs.rds")
+head(df_exprs[, 1:5])
+```
+
+```
+##             id SLC7A2_ENSG00000003989 HSPB6_ENSG00000004776
+## 1 TCGA-3C-AAAU               8.605850              2.086391
+## 2 TCGA-3C-AALI               3.017706              2.884330
+## 3 TCGA-3C-AALJ               4.342539              3.086235
+## 4 TCGA-3C-AALK               4.861960              2.754787
+## 5 TCGA-4H-AAAK               4.298637              2.873187
+## 6 TCGA-5L-AAT0               2.595548              2.472016
+##   PDK4_ENSG00000004799 ZMYND10_ENSG00000004838
+## 1             3.467477                3.891913
+## 2             2.749256                2.385003
+## 3             5.311276                2.766632
+## 4             3.407671                4.407235
+## 5             4.594217                4.634472
+## 6             3.165645                3.405532
+```
+
+---
+class: inverse
+
+## Differences between groups, focusing on a particular gene
+
+Q1: Do ER+ and ER- patients exhibit differences in the expression of a particular gene of interest (ESR1)?
+
+Q2: Same question about PAM50 subtypes. 
+
+&lt;br/&gt;
+
+- How would you answer these questions
+
+  - Using numerical quantification -- which model or test would you use?
+    
+  - Visually -- what type of plots would you consider?
+
+---
+class: inverse
+
+## Boxplot quiz
+
+Is there a significant difference between the groups?
+
+![](fig/boxplot1.png)
+
+--
+
+Do you think 
+
+* Yes, `p &lt; 0.05` (i.e. group means are significantly different)
+* Not enough information to decide
+* No, `p &gt; 0.05`
+
+If you choose "cannot decide", what additional information would you need?
+
+---
+class: inverse
+
+## Correlation quiz
+
+How strong is the correlation between the two variables? Is it significant?
+
+.center[
+  ![:scale 70%](fig/scatterplots.png)
+]
+
+--
+
+Also, see http://guessthecorrelation.com/
+
+---
+class: inverse, middle
+
+### So far, we focused on a single gene
+
+### Now let's consider the expression of all genes
+
+Before going further: a detour on tidy data (idea underlying the tidyverse)
+
+
+---
+
+# Tidy data
+
+&gt; “Tidy datasets are all alike, but every messy dataset is messy in its own way.” –– Hadley Wickham
+
+1. Each variable must have its own column. 
+2. Each observation must have its own row. 
+3. Each value must have its own cell.
+
+--
+
+![](http://r4ds.had.co.nz/images/tidy-1.png)
+
+When unsure, we should ask ourselves: Is our data trapped in column names? Column headers should be variable names (but not values). 
+
+---
+
+# Tidy vs untidy data
+
+![](fig/tidy_vs_untidy.png)
+
+.footnote[Source: slides by David Zimmermann]
+
+---
+
+# tidyr for converting between the two formats
+
+![](fig/tidyr_gather2.png)
+
+---
+
+![](fig/tidy_vs_untidy.png)
+
+Converting from wide format to tidy
+
+
+```r
+data %&gt;%
+  gather(key = "Name", value = "Sales", -year)
+```
+
+---
+
+# Your turn
+
+Is gene expression matrix in a tidy format? 
+
+--
+
+
+```r
+df_exprs &lt;- readRDS("data/TCGA_exprs.rds")
+```
+
+![](fig/exprs_matrix.png)
+
+Convert this gene expression data into a tidy format using `tidyr::gather()`. 
+
+---
+class: inverse, middle
+
+# dplyr for joining data frames
+
+---
+class: top
+background-image: url(fig/join0.png)
+background-position: 50% 60%
+background-size: 40%
+
+# Joining data frames
+
+.footnote[Source: slides by David Zimmermann]
+
+---
+# inner_join()
+
+![](fig/join1.png)
+
+---
+# full_join()
+
+![](fig/join2.png)
+
+---
+# left_join()
+
+![](fig/join3.png)
+
+---
+class: inverse
+
+# Getting insights into high-dimensional data
+
+Now considering *all genes*. 
+
+Q1: Do ER+ and ER- patients have generally quite different expression profiles, or are they quite similar?
+
+Q2: Same question about PAM50 subtypes. 
+
+&lt;br/&gt; 
+
+How would you answer these questions?
+
+---
+### Briefly discussed last time:
+
+### How to visually explore data if there are more than two or three variables?
+
+That is, how to visualise high-dimensional data?
+
+--
+
+Options include:
+
+* visualise a subset of variables, 
+
+    * randomly selected
+    
+    * selection based on summary statistics
+
+* compute summary statistics and visualise those instead
+
+* apply a dimensionality reduction method such as PCA
+
+
+---
+
+# Why you should first visualise your data before launching your favourite ML model
+
+--
+
+You should have a rough idea about:
+
+* Data quality
+    * Are there any batch effects?
+    * Are there possible sample mislabellings?
+    * Outliers? 
+* Distributions - should you apply a transformation?
+* Is there a feature which explains majority of variation in the data (e.g. gender, age, batch)
+
+--
+
+Before fitting a fancy complicated model, you should consider starting with a simple one, to have a rough idea about:
+
+* Expected model fit:
+    * Is there strong (linear) signal? 
+    * Your expected prediction accuracy (will it be close to random or close to 100%)
+
+
+---
+# Why you should first visualise your data before launching an ML algorithm
+
+
+
+
+
+![](2018_12_04_slides_files/figure-html/unnamed-chunk-6-1.png)&lt;!-- --&gt;
+
+---
+# Why you should first visualise your data before launching an ML algorithm
+
+![](2018_12_04_slides_files/figure-html/unnamed-chunk-7-1.png)&lt;!-- --&gt;
+
+---
+# Why you should first visualise your data before launching an ML algorithm
+
+![](2018_12_04_slides_files/figure-html/unnamed-chunk-8-1.png)&lt;!-- --&gt;
+
+---
+class: inverse
+
+# Data science workflow within tidyverse
+
+.center[
+  ![:scale 90%](fig/tidyverse_data_science.png)
+]
+    </textarea>
+<script src="https://remarkjs.com/downloads/remark-latest.min.js"></script>
+<script src="my-macros.js"></script>
+<script>var slideshow = remark.create({
+"highlightStyle": "github",
+"highlightLines": true,
+"countIncrementalSlides": false
+});
+if (window.HTMLWidgets) slideshow.on('afterShowSlide', function (slide) {
+  window.dispatchEvent(new Event('resize'));
+});
+(function() {
+  var d = document, s = d.createElement("style"), r = d.querySelector(".remark-slide-scaler");
+  if (!r) return;
+  s.type = "text/css"; s.innerHTML = "@page {size: " + r.style.width + " " + r.style.height +"; }";
+  d.head.appendChild(s);
+})();</script>
+
+<script>
+(function() {
+  var i, text, code, codes = document.getElementsByTagName('code');
+  for (i = 0; i < codes.length;) {
+    code = codes[i];
+    if (code.parentNode.tagName !== 'PRE' && code.childElementCount === 0) {
+      text = code.textContent;
+      if (/^\\\((.|\s)+\\\)$/.test(text) || /^\\\[(.|\s)+\\\]$/.test(text) ||
+          /^\$\$(.|\s)+\$\$$/.test(text) ||
+          /^\\begin\{([^}]+)\}(.|\s)+\\end\{[^}]+\}$/.test(text)) {
+        code.outerHTML = code.innerHTML;  // remove <code></code>
+        continue;
+      }
+    }
+    i++;
+  }
+})();
+</script>
+<!-- dynamically load mathjax for compatibility with self-contained -->
+<script>
+(function () {
+  var script = document.createElement('script');
+  script.type = 'text/javascript';
+  script.src  = 'https://mathjax.rstudio.com/latest/MathJax.js?config=TeX-MML-AM_CHTML';
+  if (location.protocol !== 'file:' && /^https?:/.test(script.src))
+    script.src  = script.src.replace(/^https?:/, '');
+  document.getElementsByTagName('head')[0].appendChild(script);
+})();
+</script>
+  </body>
+</html>
